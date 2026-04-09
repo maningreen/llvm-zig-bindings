@@ -57,7 +57,7 @@ pub fn build(b: *std.Build) !void {
 
     // Link with libclang.
     switch (target.result.os.tag) {
-        .linux => libclang_bindings_module.linkSystemLibrary("clang-19", .{}),
+        .linux => libclang_bindings_module.linkSystemLibrary("clang", .{}),
         .macos => {
             libclang_bindings_module.addLibraryPath(.{
                 .cwd_relative = "/opt/homebrew/opt/llvm@19/lib",
@@ -82,7 +82,7 @@ pub fn build(b: *std.Build) !void {
     }
 
     // ---< Utilities >---
-    try buildTests(b, target);
+    try buildTests(b);
 
     const examples = b.option(bool, "examples", "Build all examples [default: false]") orelse false;
     if (examples) {
@@ -113,9 +113,10 @@ const BuildInfo = struct {
 fn buildExample(b: *std.Build, i: BuildInfo) void {
     const exe = b.addExecutable(.{
         .name = i.filename(),
-        .root_source_file = b.path(i.filepath),
-        .target = i.target,
-        .optimize = i.optimize,
+        .root_module = b.createModule(.{
+            .target = i.target,
+            .root_source_file = b.path(i.filepath),
+        }),
     });
     exe.root_module.addImport("llvm", b.modules.get("llvm-zig").?);
 
@@ -133,17 +134,13 @@ fn buildExample(b: *std.Build, i: BuildInfo) void {
     run_step.dependOn(&run_cmd.step);
 }
 
-fn buildTests(b: *std.Build, target: std.Build.ResolvedTarget) !void {
+fn buildTests(b: *std.Build) !void {
     const llvm_bindings_tests = b.addTest(.{
-        .root_source_file = b.path("src/bindings-llvm.zig"),
-        .target = target,
-        .optimize = .Debug,
+        .root_module = b.modules.get("llvm-zig") orelse return error.MissingModule,
         .name = "llvm-bindings-tests",
     });
     const libclang_bindings_tests = b.addTest(.{
-        .root_source_file = b.path("src/bindings-clang.zig"),
-        .target = target,
-        .optimize = .Debug,
+        .root_module = b.modules.get("clang-zig") orelse return error.MissingModule,
         .name = "clang-bindings-tests",
     });
 

@@ -2,7 +2,8 @@ const std = @import("std");
 
 const llvm = @import("llvm");
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
+    const io = init.io;
     const native_triple = llvm.target.Target.getDefaultTriple();
     std.debug.print("Found target triple to be '{s}'.\n", .{native_triple});
 
@@ -44,7 +45,7 @@ pub fn main() !void {
     // Dump main module and emit asm.
     main_module.dump();
 
-    try emitAsmFile(main_module, machine);
+    try emitAsmFile(io, main_module, machine);
 
     llvm.LLVMShutdown();
 }
@@ -107,12 +108,12 @@ fn buildMainModule(cx: *llvm.context.Context, layout: *llvm.target.TargetData, t
     return module;
 }
 
-fn emitAsmFile(module: *llvm.module.Module, machine: *llvm.target.TargetMachine) !void {
-    const cwd_parent = try std.fs.cwd().realpathAlloc(std.heap.c_allocator, ".");
+fn emitAsmFile(io: std.Io, module: *llvm.module.Module, machine: *llvm.target.TargetMachine) !void {
+    const cwd_parent = try std.Io.Dir.cwd().realPathFileAlloc(io, ".", std.heap.c_allocator);
     const out_dir = try std.fs.path.join(std.heap.c_allocator, &.{ cwd_parent, "ignore-me" });
     std.heap.c_allocator.free(cwd_parent);
 
-    std.fs.makeDirAbsolute(out_dir) catch {
+    std.Io.Dir.createDirAbsolute(io, out_dir, std.Io.Dir.Permissions.default_file) catch {
         std.debug.print("Skipping directory creation as it probably already exists.\n", .{});
     };
     const out_file = try std.fs.path.join(std.heap.c_allocator, &.{ out_dir, "playground.asm" });

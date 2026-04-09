@@ -137,7 +137,7 @@ pub const TargetArch = enum {
         }
     }
 
-    pub fn initAllTargetInfos() callconv(.C) void {
+    pub fn initAllTargetInfos() callconv(.c) void {
         TargetInit.LLVMInitializeAArch64TargetInfo();
         TargetInit.LLVMInitializeAMDGPUTargetInfo();
         TargetInit.LLVMInitializeARMTargetInfo();

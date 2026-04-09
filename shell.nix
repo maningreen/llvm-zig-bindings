@@ -2,6 +2,9 @@
   mkShell,
   clang,
   libclang,
+  zlib,
+  llvmPackages_19,
+  zstd,
   zig,
   ...
 }:
@@ -10,5 +13,8 @@ mkShell {
     clang
     zig
     libclang
+    llvmPackages_19.libllvm
+    zlib
+    zstd
   ];
 }
